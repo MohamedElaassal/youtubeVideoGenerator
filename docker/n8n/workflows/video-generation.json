@@ -1,0 +1,351 @@
+{
+  "name": "YouTube Video Generator (Free Services)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "video-generation",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-start",
+      "name": "Webhook Start",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "video-generation-webhook"
+    },
+    {
+      "parameters": {
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{ $('Set API Keys').item.json.gemini_api_key }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "contents",
+              "value": "=[{\"parts\": [{\"text\": \"Create a YouTube script about: {{ $json.topic }}. Length: {{ $json.duration }} minutes. Include an engaging intro, main content with 3-5 key points, and a strong conclusion with call-to-action. Make it informative and engaging.\"}]}]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "generate-script-gemini",
+      "name": "Generate Script with Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://pixabay.com/api/videos/",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{ $('Set API Keys').item.json.pixabay_api_key }}"
+            },
+            {
+              "name": "q",
+              "value": "={{ $json.topic.replace(' ', '+') }}"
+            },
+            {
+              "name": "video_type",
+              "value": "film"
+            },
+            {
+              "name": "category",
+              "value": "backgrounds"
+            },
+            {
+              "name": "min_duration",
+              "value": "20"
+            },
+            {
+              "name": "per_page",
+              "value": "10"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-videos-pixabay",
+      "name": "Fetch Videos from Pixabay",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        720,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://unsplash.com/napi/search/photos",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json.topic }}"
+            },
+            {
+              "name": "per_page",
+              "value": "10"
+            },
+            {
+              "name": "orientation",
+              "value": "landscape"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Client-ID {{ $('Set API Keys').item.json.unsplash_access_key }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-images-unsplash",
+      "name": "Fetch Images from Unsplash",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        720,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=python3 -c \"import gtts; import os; tts = gtts.gTTS(text='{{ $('Generate Script with Gemini').item.json.candidates[0].content.parts[0].text.replace('\\n', ' ').replace('\\'', '\\\\\\'\\'') }}', lang='en', slow=False); tts.save('/tmp/voiceover_{{ $json.video_id }}.mp3'); print('Voiceover generated successfully')\""
+      },
+      "id": "generate-voiceover-gtts",
+      "name": "Generate Voiceover with gTTS",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        940,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Create video script for FFmpeg\nconst script = $('Generate Script with Gemini').item.json.candidates[0].content.parts[0].text;\nconst videoId = $json.video_id;\n\n// Get media assets\nconst pixabayVideos = $('Fetch Videos from Pixabay').item.json.hits || [];\nconst unsplashImages = $('Fetch Images from Unsplash').item.json.results || [];\n\n// Create media list for video assembly\nlet mediaList = [];\nlet totalDuration = 0;\nconst targetDuration = parseInt($json.duration) * 60; // Convert to seconds\n\n// Add videos first\npixabayVideos.forEach((video, index) => {\n  if (totalDuration < targetDuration && video.videos && video.videos.medium) {\n    mediaList.push({\n      type: 'video',\n      url: video.videos.medium.url,\n      duration: Math.min(video.duration, 10) // Max 10 seconds per clip\n    });\n    totalDuration += Math.min(video.duration, 10);\n  }\n});\n\n// Fill remaining time with images (3 seconds each)\nunsplashImages.forEach((image, index) => {\n  if (totalDuration < targetDuration) {\n    mediaList.push({\n      type: 'image',\n      url: image.urls.regular,\n      duration: 3\n    });\n    totalDuration += 3;\n  }\n});\n\nreturn {\n  json: {\n    script: script,\n    video_id: videoId,\n    media_list: mediaList,\n    total_duration: totalDuration,\n    voiceover_path: `/tmp/voiceover_${videoId}.mp3`\n  }\n};"
+      },
+      "id": "prepare-video-data",
+      "name": "Prepare Video Assembly Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1160,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=python3 /var/www/scripts/create_video.py '{{ JSON.stringify($json) }}'"
+      },
+      "id": "assemble-video-python",
+      "name": "Assemble Video with Python",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1380,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://app:8000/api/videos/{{ $json.video_id }}/update",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.api_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "completed"
+            },
+            {
+              "name": "file_path",
+              "value": "=/tmp/final_video_{{ $json.video_id }}.mp4"
+            },
+            {
+              "name": "script",
+              "value": "={{ $('Generate Script with Gemini').item.json.candidates[0].content.parts[0].text }}"
+            }
+          ]
+        }
+      },
+      "id": "update-video-status",
+      "name": "Update Video Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"Video generation completed\", \"video_id\": $json.video_id, \"file_path\": \"/tmp/final_video_\" + $json.video_id + \".mp4\" } }}"
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1820,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Set up API keys - You'll need to configure these in n8n\nreturn {\n  json: {\n    gemini_api_key: \"YOUR_GEMINI_API_KEY\", // Free: https://makersuite.google.com/app/apikey\n    pixabay_api_key: \"YOUR_PIXABAY_API_KEY\", // Free: https://pixabay.com/api/docs/\n    unsplash_access_key: \"YOUR_UNSPLASH_ACCESS_KEY\" // Free: https://unsplash.com/developers\n  }\n};"
+      },
+      "id": "set-api-keys",
+      "name": "Set API Keys",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        420
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Start": {
+      "main": [
+        [
+          {
+            "node": "Generate Script with Gemini",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Set API Keys",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Script with Gemini": {
+      "main": [
+        [
+          {
+            "node": "Fetch Videos from Pixabay",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Images from Unsplash",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Videos from Pixabay": {
+      "main": [
+        [
+          {
+            "node": "Generate Voiceover with gTTS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Voiceover with gTTS": {
+      "main": [
+        [
+          {
+            "node": "Prepare Video Assembly Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Video Assembly Data": {
+      "main": [
+        [
+          {
+            "node": "Assemble Video with Python",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble Video with Python": {
+      "main": [
+        [
+          {
+            "node": "Update Video Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Video Status": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "timezone": "UTC"
+  },
+  "createdAt": "2025-01-01T00:00:00.000Z",
+  "updatedAt": "2025-01-01T00:00:00.000Z",
+  "id": "1"
+}

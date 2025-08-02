@@ -1,4 +1,4 @@
-FROM php:8.2-fpm
+FROM php:8.2
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -13,7 +13,12 @@ RUN apt-get update && apt-get install -y \
     npm \
     ffmpeg \
     python3 \
-    python3-pip
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies for video processing
+COPY scripts/requirements.txt /tmp/requirements.txt
+RUN pip3 install -r /tmp/requirements.txt
 
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -31,7 +36,12 @@ RUN pip3 install gTTS pydub
 WORKDIR /var/www/html
 
 # Copy application files
-COPY . .
+# Copy application code
+COPY . /var/www
+
+# Copy Python scripts to accessible location
+COPY scripts/ /app/scripts/
+RUN chmod +x /app/scripts/*.py
 
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader

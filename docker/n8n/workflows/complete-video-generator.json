@@ -1,0 +1,685 @@
+{
+  "name": "Complete YouTube Video Generator (All-in-One)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-complete-video",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-start",
+      "name": "Start Video Generation",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "complete-video-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Setup workflow data - NO API keys stored here!\nreturn {\n  json: {\n    // Input data from webhook\n    topic: $input.item.json.topic || 'Technology Trends',\n    duration: $input.item.json.duration || 5,\n    user_id: $input.item.json.user_id,\n    video_id: $input.item.json.video_id || Date.now().toString(),\n    \n    // Laravel API token for authentication\n    api_token: $input.item.json.api_token || \"default-token\",\n    \n    // Laravel base URL\n    laravel_url: \"http://app:8000\"\n  }\n};"
+      },
+      "id": "setup-config",
+      "name": "Setup Configuration",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://app:8000/api/videos/{{ $json.video_id }}/status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $json.api_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "generating_script"
+            },
+            {
+              "name": "progress",
+              "value": 10
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "update-status-script",
+      "name": "Update Status: Generating Script",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://app:8000/api/videos/{{ $('Setup Configuration').item.json.video_id }}/generate-script",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $('Setup Configuration').item.json.api_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "topic",
+              "value": "{{ $('Setup Configuration').item.json.topic }}"
+            },
+            {
+              "name": "duration",
+              "value": "{{ $('Setup Configuration').item.json.duration }}"
+            },
+            {
+              "name": "user_id",
+              "value": "{{ $('Setup Configuration').item.json.user_id }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "generate-script",
+      "name": "Generate Script via Laravel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://app:8000/api/videos/{{ $('Setup Configuration').item.json.video_id }}/status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $('Setup Configuration').item.json.api_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "fetching_media"
+            },
+            {
+              "name": "progress",
+              "value": 30
+            },
+            {
+              "name": "script",
+              "value": "{{ $json.script }}"
+            }
+          ]
+        }
+      },
+      "id": "update-status-media",
+      "name": "Update Status: Fetching Media",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://app:8000/api/videos/{{ $('Setup Configuration').item.json.video_id }}/fetch-media",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $('Setup Configuration').item.json.api_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "topic",
+              "value": "{{ $('Setup Configuration').item.json.topic }}"
+            },
+            {
+              "name": "user_id",
+              "value": "{{ $('Setup Configuration').item.json.user_id }}"
+            }
+          ]
+        }
+      },
+      "id": "fetch-media",
+      "name": "Fetch Media via Laravel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://app:8000/api/videos/{{ $('Setup Configuration').item.json.video_id }}/status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $('Setup Configuration').item.json.api_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "creating_voiceover"
+            },
+            {
+              "name": "progress",
+              "value": 50
+            }
+          ]
+        }
+      },
+      "id": "update-status-voice",
+      "name": "Update Status: Creating Voiceover",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "command": "python3",
+        "parameters": "/app/scripts/gtts_client.py \"{{ $('Generate Script via Laravel').item.json.script }}\" \"/tmp/voiceover_{{ $('Setup Configuration').item.json.video_id }}.mp3\" \"en\" \"false\""
+      },
+      "id": "create-voiceover",
+      "name": "Create Voiceover with gTTS",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1780, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://app:8000/api/videos/{{ $('Setup Configuration').item.json.video_id }}/status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $('Setup Configuration').item.json.api_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "assembling_video"
+            },
+            {
+              "name": "progress",
+              "value": 70
+            }
+          ]
+        }
+      },
+      "id": "update-status-assembly",
+      "name": "Update Status: Assembling Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2000, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare data for video assembly\nconst videoId = $('Setup Configuration').item.json.video_id;\nconst mediaList = $('Fetch Media via Laravel').item.json.media_list || [];\n\n// Create assembly data\nconst assemblyData = {\n  video_id: videoId,\n  media_list: mediaList,\n  voiceover_path: `/tmp/voiceover_${videoId}.mp3`\n};\n\nreturn {\n  json: {\n    assembly_data: JSON.stringify(assemblyData),\n    video_id: videoId\n  }\n};"
+      },
+      "id": "prepare-assembly",
+      "name": "Prepare Video Assembly Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2220, 300]
+    },
+    {
+      "parameters": {
+        "command": "python3",
+        "parameters": "/app/scripts/create_video.py '{{ $json.assembly_data }}'"
+      },
+      "id": "assemble-video",
+      "name": "Assemble Final Video",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [2440, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $('Setup Configuration').item.json.youtube_access_token }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-youtube-auth",
+      "name": "Check YouTube Auth",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2660, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://app:8000/api/videos/{{ $('Setup Configuration').item.json.video_id }}/status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $('Setup Configuration').item.json.api_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "uploading_youtube"
+            },
+            {
+              "name": "progress",
+              "value": 90
+            }
+          ]
+        }
+      },
+      "id": "update-status-upload",
+      "name": "Update Status: Uploading",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2880, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status&uploadType=resumable",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $('Setup Configuration').item.json.youtube_access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "snippet",
+              "value": {
+                "title": "{{ $('Setup Configuration').item.json.topic }} - AI Generated Video",
+                "description": "This video was automatically generated using AI.\\n\\nScript generated by Google Gemini AI\\nMedia from Pixabay and Unsplash\\nVoiceover by Google Text-to-Speech\\n\\n#AI #{{ $('Setup Configuration').item.json.topic.replace(' ', '') }} #AutoGenerated",
+                "tags": ["AI", "{{ $('Setup Configuration').item.json.topic }}", "Automated", "Technology"],
+                "categoryId": "28"
+              }
+            },
+            {
+              "name": "status",
+              "value": {
+                "privacyStatus": "public"
+              }
+            }
+          ]
+        }
+      },
+      "id": "upload-youtube",
+      "name": "Upload to YouTube",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [3100, 200]
+    },
+    {
+      "parameters": {
+        "url": "http://app:8000/api/videos/{{ $('Setup Configuration').item.json.video_id }}/youtube-uploaded",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $('Setup Configuration').item.json.api_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "youtube_video_id",
+              "value": "={{ $json.id }}"
+            },
+            {
+              "name": "youtube_url",
+              "value": "=https://www.youtube.com/watch?v={{ $json.id }}"
+            },
+            {
+              "name": "status",
+              "value": "completed"
+            },
+            {
+              "name": "progress",
+              "value": 100
+            }
+          ]
+        }
+      },
+      "id": "update-youtube-success",
+      "name": "Update YouTube Success",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [3320, 200]
+    },
+    {
+      "parameters": {
+        "url": "http://app:8000/api/videos/{{ $('Setup Configuration').item.json.video_id }}/status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $('Setup Configuration').item.json.api_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "completed"
+            },
+            {
+              "name": "progress",
+              "value": 100
+            },
+            {
+              "name": "file_path",
+              "value": "/tmp/final_video_{{ $('Setup Configuration').item.json.video_id }}.mp4"
+            }
+          ]
+        }
+      },
+      "id": "update-completed",
+      "name": "Update Status: Completed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2880, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ \n  $('Check YouTube Auth').item.json && $('Upload to YouTube') ? \n  {\n    \"success\": true,\n    \"message\": \"Video generated and uploaded to YouTube successfully!\",\n    \"video_id\": $('Setup Configuration').item.json.video_id,\n    \"youtube_url\": \"https://www.youtube.com/watch?v=\" + $('Upload to YouTube').item.json.id,\n    \"local_path\": \"/tmp/final_video_\" + $('Setup Configuration').item.json.video_id + \".mp4\"\n  } : \n  {\n    \"success\": true,\n    \"message\": \"Video generated successfully! (No YouTube upload - missing auth)\",\n    \"video_id\": $('Setup Configuration').item.json.video_id,\n    \"local_path\": \"/tmp/final_video_\" + $('Setup Configuration').item.json.video_id + \".mp4\",\n    \"note\": \"Provide youtube_access_token to enable YouTube upload\"\n  }\n}}"
+      },
+      "id": "final-response",
+      "name": "Final Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [3540, 300]
+    }
+  ],
+  "connections": {
+    "Start Video Generation": {
+      "main": [
+        [
+          {
+            "node": "Setup Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Setup Configuration": {
+      "main": [
+        [
+          {
+            "node": "Update Status: Generating Script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status: Generating Script": {
+      "main": [
+        [
+          {
+            "node": "Generate Script via Laravel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Script via Laravel": {
+      "main": [
+        [
+          {
+            "node": "Update Status: Fetching Media",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status: Fetching Media": {
+      "main": [
+        [
+          {
+            "node": "Fetch Media via Laravel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Media via Laravel": {
+      "main": [
+        [
+          {
+            "node": "Update Status: Creating Voiceover",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status: Creating Voiceover": {
+      "main": [
+        [
+          {
+            "node": "Create Voiceover with gTTS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Voiceover with gTTS": {
+      "main": [
+        [
+          {
+            "node": "Update Status: Assembling Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status: Assembling Video": {
+      "main": [
+        [
+          {
+            "node": "Prepare Video Assembly Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Video Assembly Data": {
+      "main": [
+        [
+          {
+            "node": "Assemble Final Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble Final Video": {
+      "main": [
+        [
+          {
+            "node": "Check YouTube Auth",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check YouTube Auth": {
+      "main": [
+        [
+          {
+            "node": "Update Status: Uploading",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Status: Completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status: Uploading": {
+      "main": [
+        [
+          {
+            "node": "Upload to YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to YouTube": {
+      "main": [
+        [
+          {
+            "node": "Update YouTube Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update YouTube Success": {
+      "main": [
+        [
+          {
+            "node": "Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status: Completed": {
+      "main": [
+        [
+          {
+            "node": "Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "timezone": "UTC"
+  },
+  "createdAt": "2025-01-01T00:00:00.000Z",
+  "updatedAt": "2025-01-01T00:00:00.000Z",
+  "id": "complete-workflow"
+}

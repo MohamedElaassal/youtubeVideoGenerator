@@ -1,84 +1,146 @@
-version: '3.8'
-
 services:
+  # Laravel Application
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
+    container_name: youtube_generator_app
+    restart: unless-stopped
+    working_dir: /var/www
     volumes:
-      - .:/var/www/html
-      - ./storage:/var/www/html/storage
+      - ./:/var/www
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - youtube_generator
+    depends_on:
+      - db
+      - redis
     environment:
       - APP_ENV=local
       - APP_DEBUG=true
-      - DB_HOST=mysql
-      - DB_DATABASE=youtube_generator
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=ytVideoGen
       - DB_USERNAME=root
       - DB_PASSWORD=secret
       - REDIS_HOST=redis
-    depends_on:
-      - mysql
-      - redis
-    networks:
-      - youtube-generator
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=6379
+      - QUEUE_CONNECTION=redis
 
-  mysql:
+  # Nginx Web Server
+  webserver:
+    image: nginx:alpine
+    container_name: youtube_generator_webserver
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx:/etc/nginx/conf.d
+    networks:
+      - youtube_generator
+    depends_on:
+      - app
+
+  # MySQL Database
+  db:
     image: mysql:8.0
+    container_name: youtube_generator_db
+    restart: unless-stopped
     ports:
       - "3306:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=secret
-      - MYSQL_DATABASE=youtube_generator
+      MYSQL_DATABASE: ytVideoGen
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_PASSWORD: secret
+      MYSQL_USER: sail
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
     volumes:
-      - mysql_data:/var/lib/mysql
+      - dbdata:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
     networks:
-      - youtube-generator
+      - youtube_generator
 
+  # Redis for Caching and Queues
   redis:
-    image: redis:7-alpine
+    image: redis:7.0-alpine
+    container_name: youtube_generator_redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
     networks:
-      - youtube-generator
+      - youtube_generator
 
+  # Laravel Queue Worker
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: youtube_generator_queue
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+    networks:
+      - youtube_generator
+    depends_on:
+      - db
+      - redis
+    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+    environment:
+      - APP_ENV=local
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=ytVideoGen
+      - DB_USERNAME=root
+      - DB_PASSWORD=secret
+      - REDIS_HOST=redis
+      - QUEUE_CONNECTION=redis
+
+  # n8n Automation Platform
   n8n:
     image: n8nio/n8n:latest
+    container_name: youtube_generator_n8n
+    restart: unless-stopped
     ports:
       - "5678:5678"
     environment:
       - N8N_BASIC_AUTH_ACTIVE=true
       - N8N_BASIC_AUTH_USER=admin
-      - N8N_BASIC_AUTH_PASSWORD=admin123
-      - WEBHOOK_URL=http://localhost:5678
-      - N8N_PROTOCOL=http
+      - N8N_BASIC_AUTH_PASSWORD=n8npassword
       - N8N_HOST=localhost
       - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=UTC
     volumes:
       - n8n_data:/home/node/.n8n
-      - ./n8n/workflows:/home/node/.n8n/workflows
+      - ./docker/n8n/workflows:/home/node/.n8n/workflows
     networks:
-      - youtube-generator
-
-  # Optional: phpMyAdmin for database management
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    ports:
-      - "8080:80"
-    environment:
-      - PMA_HOST=mysql
-      - PMA_USER=root
-      - PMA_PASSWORD=secret
+      - youtube_generator
     depends_on:
-      - mysql
-    networks:
-      - youtube-generator
+      - db
+      - redis
 
-volumes:
-  mysql_data:
-  n8n_data:
+  # FFmpeg for Video Processing
+  ffmpeg:
+    image: jrottenberg/ffmpeg:4.4-alpine
+    container_name: youtube_generator_ffmpeg
+    volumes:
+      - ./storage/app/videos:/videos
+    networks:
+      - youtube_generator
 
 networks:
-  youtube-generator:
+  youtube_generator:
     driver: bridge
+
+volumes:
+  dbdata:
+    driver: local
+  n8n_data:
+    driver: local
