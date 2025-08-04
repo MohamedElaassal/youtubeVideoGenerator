@@ -18,25 +18,26 @@ RUN apt-get update && apt-get install -y \
 
 # Install Python dependencies for video processing
 COPY scripts/requirements.txt /tmp/requirements.txt
-RUN pip3 install -r /tmp/requirements.txt
+RUN pip3 install -r /tmp/requirements.txt --break-system-packages
 
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd \
+    && pecl install redis \
+    && docker-php-ext-enable redis
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Install Python packages for TTS
-RUN pip3 install gTTS pydub
+RUN pip3 install gTTS pydub --break-system-packages
 
 # Set working directory
-WORKDIR /var/www/html
+WORKDIR /var/www
 
 # Copy application files
-# Copy application code
 COPY . /var/www
 
 # Copy Python scripts to accessible location
@@ -47,10 +48,10 @@ RUN chmod +x /app/scripts/*.py
 RUN composer install --no-dev --optimize-autoloader
 
 # Install Node.js dependencies and build assets
-RUN npm install && npm run build
+RUN npm install --legacy-peer-deps && npm run build
 
 # Set permissions
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
 # Expose port
 EXPOSE 8000

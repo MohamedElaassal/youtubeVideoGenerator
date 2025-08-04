@@ -1,23 +1,8 @@
-#!/usr/bin/env python3
-"""
-Requirements file for Python scripts
-Install these packages in your Python environment or Docker container
-"""
+# Requirements file for Python scripts
+# Install these packages in your Python environment or Docker container
 
 # For text-to-speech with gTTS
 gtts==2.5.1
 
 # For HTTP requests
 requests==2.31.0
-
-# For JSON processing (built-in, no install needed)
-# json
-
-# For system operations (built-in, no install needed)
-# os
-# sys
-# subprocess
-# pathlib
-# tempfile
-# logging
-# shutil

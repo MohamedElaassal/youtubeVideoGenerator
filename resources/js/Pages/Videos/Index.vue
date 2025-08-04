@@ -35,9 +35,9 @@
 
               <select v-model="filters.duration" @change="filterVideos" class="rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
                 <option value="">All Durations</option>
-                <option value="short">Short (< 1 min)</option>
+                <option value="short">Short (&lt; 1 min)</option>
                 <option value="medium">Medium (1-5 min)</option>
-                <option value="long">Long (> 5 min)</option>
+                <option value="long">Long (&gt; 5 min)</option>
               </select>
 
               <input

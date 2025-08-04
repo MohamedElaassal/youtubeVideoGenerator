@@ -9,9 +9,12 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Auth;
 
 class VideoController extends Controller
 {
+    use AuthorizesRequests;
     public function index(Request $request): Response
     {
         $videos = $request->user()
@@ -28,7 +31,7 @@ class VideoController extends Controller
 
     public function create(): Response
     {
-        $youtubeChannels = auth()->user()
+        $youtubeChannels = Auth::user()
             ->youtubeChannels()
             ->orderBy('channel_title')
             ->get();
@@ -100,12 +103,12 @@ class VideoController extends Controller
     {
         $this->authorize('update', $video);
 
-        $youtubeChannels = auth()->user()
+        $youtubeChannels = Auth::user()
             ->youtubeChannels()
             ->orderBy('channel_title')
             ->get();
 
-        return Inertia::render('Videos/Edit', [
+        return Inertia::render('Videos/Create', [
             'video' => $video,
             'youtubeChannels' => $youtubeChannels
         ]);
