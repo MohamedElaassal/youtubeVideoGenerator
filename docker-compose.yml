@@ -9,6 +9,8 @@ services:
     working_dir: /var/www
     expose:
       - "9000"
+    ports:
+      - "5173:5173"
     volumes:
       - ./:/var/www
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
