@@ -26,7 +26,7 @@ Route::get('/login', function () {
 })->name('login');
 
 // Google OAuth Routes
-Route::prefix('auth/google')->group(function () {
+Route::prefix('auth/google')->middleware('cors')->group(function () {
     Route::get('/', [GoogleController::class, 'redirect'])->name('google.redirect');
     Route::get('/callback', [GoogleController::class, 'callback'])->name('google.callback');
 });

@@ -20,7 +20,8 @@ class GoogleController extends Controller
             return redirect('/login')->with('error', 'Google OAuth is not configured. Please set up your Google OAuth credentials in the .env file.');
         }
 
-        return Socialite::driver('google')->redirect();
+        // Force a full page redirect (not Inertia.js)
+        return redirect()->away(Socialite::driver('google')->redirect()->getTargetUrl());
     }
 
     public function callback(): RedirectResponse
