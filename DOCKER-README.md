@@ -41,10 +41,6 @@ This setup provides a complete containerized environment for the YouTube Video G
 
 ## 🚀 Getting Started
 
-### Windows Users:
-```bash
-./start.bat
-```
 
 ### Linux/Mac Users:
 ```bash
@@ -181,7 +177,7 @@ project/
 ├── Dockerfile          # Laravel app container
 ├── .env.docker         # Environment variables for Docker
 ├── start.sh           # Linux/Mac startup script
-└── start.bat          # Windows startup script
+
 ```
 
 ## 🔧 Development Commands
@@ -264,7 +260,7 @@ docker-compose down -v
 docker system prune -a
 
 # Start fresh
-./start.bat  # or ./start.sh
+ ./start.sh
 ```
 
 ## 📊 Monitoring
