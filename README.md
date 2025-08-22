@@ -79,6 +79,146 @@ VideoGenius AI is a revolutionary SaaS platform that automates the entire YouTub
                     └─────────────────┘
 ```
 
+## 🔧 n8n Workflow Integration
+
+VideoGenius AI leverages **n8n** as the core automation engine that orchestrates the entire video creation pipeline. The workflow handles AI service coordination, media processing, and YouTube publishing in a visual, node-based environment.
+
+### 📋 Workflow Import
+
+The complete video generation workflow is defined in `complete_video_generator.json`. This workflow must be imported into your n8n instance to enable automated video creation.
+
+**To import the workflow:**
+
+1. **Access n8n Dashboard**
+   ```
+   http://localhost:5678
+   ```
+
+2. **Import Workflow**
+   - Click "Import from File"
+   - Select `workflows/complete_video_generator.json`
+   - The workflow will automatically connect to Laravel backend
+
+3. **Workflow Configuration**
+   ```bash
+   # No API credentials needed in n8n!
+   # Laravel handles all external API integrations:
+   # - OpenAI API (configured in Laravel .env)
+   # - Pexels API (configured in Laravel .env)
+   # - Google Cloud TTS (configured in Laravel .env)
+   # - YouTube API (OAuth handled by Laravel)
+   # 
+   # n8n only needs Laravel webhook endpoints
+   ```
+
+### 🏗️ n8n Workflow Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Trigger       │    │   Script Gen    │    │   Media Search  │
+│   (Webhook)     │───►│   (OpenAI)      │───►│   (Pexels API)  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                │                       │
+                                ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Status Update │    │   Voice Gen     │    │   Media Filter  │
+│   (Laravel API) │◄───│   (TTS API)     │◄───│   (Processing)  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Video Compile │    │   SEO Optimize  │    │   YouTube Upload│
+│   (Python Script)│───►│   (AI Generated)│───►│   (API v3)      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 ▼
+                    ┌─────────────────┐
+                    │   Final Status  │
+                    │   (Webhook)     │
+                    └─────────────────┘
+```
+
+### 🎬 Workflow Nodes Breakdown
+
+**1. Webhook Trigger**
+- Receives video creation requests from Laravel
+- Validates input parameters (topic, style, duration)
+- Initiates the automation pipeline
+
+**2. Script Generation (Laravel API Call)**
+- Sends request to Laravel backend for script creation
+- Laravel handles OpenAI GPT-4 integration internally
+- Returns structured script with timestamps
+
+**3. Media Selection (Laravel API Call)**
+- Requests media assets from Laravel backend
+- Laravel handles Pexels API integration and filtering
+- Returns curated media URLs and metadata
+
+**4. Voiceover Generation (Laravel API Call)**
+- Sends script to Laravel for TTS processing
+- Laravel manages TTS service integration
+- Returns audio file URL and duration
+
+**5. Video Compilation (Laravel Queue Job)**
+- Triggers Laravel queue job for video assembly
+- Laravel executes Python scripts internally
+- Combines all assets into final MP4
+
+**6. SEO Optimization (Laravel AI Service)**
+- Requests optimized metadata from Laravel
+- Laravel generates title, description, and tags
+- Returns SEO-optimized content
+
+**7. YouTube Upload (Laravel OAuth)**
+- Triggers Laravel YouTube upload service
+- Laravel handles OAuth authentication and API calls
+- Returns upload status and video URL
+
+**8. Status Updates (Laravel Webhooks)**
+- Receives progress updates from Laravel
+- Updates workflow execution status
+- Triggers completion notifications
+
+### ⚙️ Workflow Configuration
+
+# Webhook URLs
+LARAVEL_APP_URL=http://app:9000
+N8N_WEBHOOK_URL=http://n8n:5678/webhook
+
+# External API Endpoints
+GEMINI_ENDPOINT=https://api.openai.com/v1
+PEXELS_ENDPOINT=https://api.pexels.com/v1
+YOUTUBE_ENDPOINT=https://www.googleapis.com/upload/youtube/v3
+```
+
+### 📊 Workflow Monitoring
+
+Monitor your n8n workflows through:
+- **Execution History**: Track success/failure rates
+- **Performance Metrics**: Average processing times
+- **Error Logs**: Debug failed executions
+- **Resource Usage**: CPU and memory consumption
+
+### 🔄 Workflow Customization
+
+The `complete_video_generator.json` workflow can be customized for:
+- **Different Content Types**: Educational, entertainment, news
+- **Brand Guidelines**: Add custom intro/outro sequences
+- **Publishing Schedules**: Set automated upload timing
+- **Quality Settings**: Adjust video resolution and bitrate
+
+**Advanced Customization:**
+```javascript
+// Example: Custom script generation prompt
+{
+  "prompt": "Create a {{$json.style}} YouTube script about {{$json.topic}} that is {{$json.duration}} long, includes viral hooks, and targets {{$json.audience}} audience.",
+  "max_tokens": 1500,
+  "temperature": 0.7
+}
+```
+
 ## 🚀 Installation
 
 ### Prerequisites
@@ -172,10 +312,16 @@ youtubeVideoGenerator/
 │   ├── video_generator.py          # Python video assembly
 │   ├── tts_generator.py            # Text-to-speech generation
 │   └── requirements.txt            # Python dependencies
+├── workflows/
+│   └── complete_video_generator.json  # n8n workflow (REQUIRED IMPORT)
 ├── docker-compose.yml              # Container orchestration
 ├── Dockerfile                      # Application container
 └── README.md                       # This file
 ```
+
+### 🚨 Important: n8n Workflow Setup
+
+**The `complete_video_generator.json` file contains the core automation logic and MUST be imported into your n8n instance for the platform to function properly.**
 
 ## 🎯 Usage
 
