@@ -21,14 +21,13 @@ VideoGenius AI is a revolutionary SaaS platform that automates the entire YouTub
 
 ### ✨ Key Features
 
-- 🤖 **AI Script Generation** - GPT-4 powered viral script creation
+- 🤖 **AI Script Generation** - GPT-4/GEMINI powered viral script creation
 - 🎨 **Smart Visual Selection** - Automatic stock footage and image selection
 - 🗣️ **Professional Voiceover** - Natural AI voice synthesis with 40+ voices
 - 🔄 **Autopilot Mode** - 24/7 automated video creation and scheduling
 - 📺 **Direct YouTube Upload** - Seamless channel integration with OAuth 2.0
 - 📊 **Advanced Analytics** - Real-time performance tracking and insights
 - 🎯 **SEO Optimization** - AI-generated titles, descriptions, and tags
-- 🌐 **Multi-language Support** - Create content in multiple languages
 
 ## 🏗️ Architecture
 
