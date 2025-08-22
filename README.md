@@ -6,7 +6,6 @@
 ![Laravel](https://img.shields.io/badge/Laravel-12.x-red?style=for-the-badge&logo=laravel&logoColor=white)
 ![Vue.js](https://img.shields.io/badge/Vue.js-3.x-4FC08D?style=for-the-badge&logo=vue.js&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![AI](https://img.shields.io/badge/AI-GPT--4%20Powered-00A67E?style=for-the-badge&logo=openai&logoColor=white)
 
 **Transform any topic into viral YouTube content with the power of AI**
 
