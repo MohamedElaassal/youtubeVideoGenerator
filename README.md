@@ -102,7 +102,7 @@ The complete video generation workflow is defined in `complete_video_generator.j
    ```bash
    # No API credentials needed in n8n!
    # Laravel handles all external API integrations:
-   # - OpenAI API (configured in Laravel .env)
+   # - OpenAI/GEMINI API (configured in Laravel .env)
    # - Pexels API (configured in Laravel .env)
    # - Google Cloud TTS (configured in Laravel .env)
    # - YouTube API (OAuth handled by Laravel)
