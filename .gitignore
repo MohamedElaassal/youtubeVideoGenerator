@@ -22,3 +22,8 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Never track local Docker environment secrets
+.env.docker
+.env.docker.*
+!.env.docker.example
