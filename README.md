@@ -83,7 +83,7 @@ VideoGenius AI leverages **n8n** as the core automation engine that orchestrates
 
 ### 📋 Workflow Import
 
-The complete video generation workflow is defined in `complete_video_generator.json`. This workflow must be imported into your n8n instance to enable automated video creation.
+The complete video generation workflow is defined in `docker/n8n/workflows/complete-video-generator.json`. This workflow must be imported into your n8n instance to enable automated video creation.
 
 **To import the workflow:**
 
@@ -94,7 +94,7 @@ The complete video generation workflow is defined in `complete_video_generator.j
 
 2. **Import Workflow**
    - Click "Import from File"
-   - Select `workflows/complete_video_generator.json`
+   - Select `docker/n8n/workflows/complete-video-generator.json`
    - The workflow will automatically connect to Laravel backend
 
 3. **Workflow Configuration**
@@ -201,7 +201,7 @@ Monitor your n8n workflows through:
 
 ### 🔄 Workflow Customization
 
-The `complete_video_generator.json` workflow can be customized for:
+The `docker/n8n/workflows/complete-video-generator.json` workflow can be customized for:
 - **Different Content Types**: Educational, entertainment, news
 - **Brand Guidelines**: Add custom intro/outro sequences
 - **Publishing Schedules**: Set automated upload timing
@@ -310,8 +310,10 @@ youtubeVideoGenerator/
 │   ├── video_generator.py          # Python video assembly
 │   ├── tts_generator.py            # Text-to-speech generation
 │   └── requirements.txt            # Python dependencies
-├── workflows/
-│   └── complete_video_generator.json  # n8n workflow (REQUIRED IMPORT)
+├── docker/
+│   └── n8n/
+│       └── workflows/
+│           └── complete-video-generator.json  # n8n workflow (REQUIRED IMPORT)
 ├── docker-compose.yml              # Container orchestration
 ├── Dockerfile                      # Application container
 └── README.md                       # This file
@@ -319,7 +321,7 @@ youtubeVideoGenerator/
 
 ### 🚨 Important: n8n Workflow Setup
 
-**The `complete_video_generator.json` file contains the core automation logic and MUST be imported into your n8n instance for the platform to function properly.**
+**The `docker/n8n/workflows/complete-video-generator.json` file contains the core automation logic and MUST be imported into your n8n instance for the platform to function properly.**
 
 ## 🎯 Usage
 
